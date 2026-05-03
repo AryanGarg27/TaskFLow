@@ -7,31 +7,18 @@ const router = express.Router();
 
 // GET /api/projects - get all projects for current user
 router.get('/', authenticate, (req, res) => {
-  let projects;
-  if (req.user.role === 'admin') {
-    projects = db.prepare(`
-      SELECT p.*, u.name as owner_name,
-        (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id) as task_count,
-        (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id AND t.status = 'done') as done_count,
-        (SELECT COUNT(*) FROM project_members pm2 WHERE pm2.project_id = p.id) as member_count
-      FROM projects p
-      JOIN users u ON p.owner_id = u.id
-      ORDER BY p.created_at DESC
-    `).all();
-  } else {
-    projects = db.prepare(`
-      SELECT p.*, u.name as owner_name,
-        (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id) as task_count,
-        (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id AND t.status = 'done') as done_count,
-        (SELECT COUNT(*) FROM project_members pm2 WHERE pm2.project_id = p.id) as member_count
-      FROM projects p
-      JOIN users u ON p.owner_id = u.id
-      WHERE p.owner_id = ? OR p.id IN (
-        SELECT project_id FROM project_members WHERE user_id = ?
-      )
-      ORDER BY p.created_at DESC
-    `).all(req.user.id, req.user.id);
-  }
+  const projects = db.prepare(`
+    SELECT p.*, u.name as owner_name,
+      (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id) as task_count,
+      (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id AND t.status = 'done') as done_count,
+      (SELECT COUNT(*) FROM project_members pm2 WHERE pm2.project_id = p.id) as member_count
+    FROM projects p
+    JOIN users u ON p.owner_id = u.id
+    WHERE p.owner_id = ? OR p.id IN (
+      SELECT project_id FROM project_members WHERE user_id = ?
+    )
+    ORDER BY p.created_at DESC
+  `).all(req.user.id, req.user.id);
   res.json({ projects });
 });
 

@@ -10,17 +10,24 @@ export default function Projects() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name: '', description: '' });
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadProjects();
   }, []);
 
-  const loadProjects = () => {
-    projectsAPI.list()
-      .then(res => setProjects(res.data.projects))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+  const loadProjects = async () => {
+    setLoadError('');
+    try {
+      const res = await projectsAPI.list();
+      setProjects(res.data.projects || []);
+    } catch (err) {
+      console.error('Failed to load projects:', err);
+      setLoadError('Failed to load projects. Please refresh the page.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCreate = async (e) => {
@@ -50,14 +57,22 @@ export default function Projects() {
         </div>
         <button className="btn btn-primary" onClick={() => setShowModal(true)}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           New Project
         </button>
       </div>
 
       <div className="page-body">
-        {projects.length === 0 ? (
+        {loadError && (
+          <div className="alert alert-error" style={{ marginBottom: 16 }}>
+            {loadError}
+            <button onClick={loadProjects} style={{ marginLeft: 12, textDecoration: 'underline', cursor: 'pointer', background: 'none', border: 'none', color: 'inherit' }}>
+              Retry
+            </button>
+          </div>
+        )}
+        {projects.length === 0 && !loadError ? (
           <div className="empty-state">
             <div className="empty-icon">📁</div>
             <div className="empty-title">No projects yet</div>
@@ -81,14 +96,14 @@ export default function Projects() {
                     <div className="project-stats">
                       <span className="project-stat">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                          <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
                         </svg>
                         {p.task_count} tasks
                       </span>
                       <span className="project-stat">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
-                          <path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+                          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+                          <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
                         </svg>
                         {p.member_count} member{p.member_count !== 1 ? 's' : ''}
                       </span>
